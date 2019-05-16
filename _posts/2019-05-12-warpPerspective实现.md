@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-``
+```
 g++ test.cpp -o test `pkg-config --cflags --libs opencv` --std=c++11
 ./test 2.jpg
 ```
