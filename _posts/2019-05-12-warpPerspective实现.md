@@ -8,6 +8,8 @@ categories: blog
 ```
 #include <highgui.h>
 #include <opencv2/opencv.hpp>
+#include <Eigen/Dense>
+
 using namespace cv;
 
 Point2f srcTri[4], dstTri[4];
@@ -74,8 +76,8 @@ void mywarpPerspective(Mat src, Mat &dst, Mat T) {
             point.at<float>(0) = j + minw;
             point.at<float>(1) = i + minh;
             proj = Tinv * point;
-            float x = proj.at<float>(0) / proj.at<float>(2) + 0.5 * (src.cols / dst.cols);
-            float y = proj.at<float>(1) / proj.at<float>(2) + 0.5 * (src.rows / dst.rows);
+            float x = proj.at<float>(0) / proj.at<float>(2) + 0.5 * src.cols / dst.cols;
+            float y = proj.at<float>(1) / proj.at<float>(2) + 0.5 * src.rows / dst.rows;
             int xx = x;
             int yy = y;
 
@@ -137,9 +139,44 @@ int main(int argc, char *argv[]) {
     dstTri[1].y = image.cols - 161;  
     dstTri[3].x = image.rows - 1;
     dstTri[3].y = image.cols - 161;
+    std::cout << dstTri[0].x << " " << dstTri[0].y << " " 
+    << dstTri[1].x << " " << dstTri[1].y << " "
+    << dstTri[2].x << " " << dstTri[2].y << " "
+    << dstTri[3].x << " " << dstTri[3].y << std::endl;
+
+
+    Eigen::MatrixXd m(8, 8);
+    Eigen::MatrixXd U(8, 1);
+    for (int i = 0; i < 4; i++) {
+        m(i * 2, 0) = srcTri[i].x;     m(i * 2, 1) = srcTri[i].y; m(i * 2, 2) = 1;                              m(i * 2, 3) = 0; 
+        m(i * 2, 4) = 0;               m(i * 2, 5) = 0;           m(i * 2, 6) = -srcTri[i].x * dstTri[i].x;     m(i * 2, 7) = -srcTri[i].y * dstTri[i].x;
+
+        m(i * 2 + 1, 0) = 0;           m(i * 2 + 1, 1) = 0;       m(i * 2 + 1, 2) = 0;                          m(i * 2  + 1, 3) = srcTri[i].x;
+        m(i * 2 + 1, 4) = srcTri[i].y; m(i * 2 + 1, 5) = 1;       m(i * 2 + 1, 6) = -srcTri[i].x * dstTri[i].y; m(i * 2  + 1, 7) = -srcTri[i].y * dstTri[i].y;
+
+        U(i * 2, 0) = dstTri[i].x;
+        U(i * 2 + 1, 0) = dstTri[i].y;
+    }
+    std::cout << m << std::endl;
+    std::cout << "m.inverse()" << std::endl;
+    std::cout << m.inverse() << std::endl;
+    std::cout << "m.inverse()______end" << std::endl; 
+
+    std::cout << "U::" << std::endl;
+    std::cout << U << std::endl;
+    std::cout << "U::endl" << std::endl;
+
+    std::cout << "mmm" << std::endl;
+    std::cout << m.inverse() * U << std::endl;
+    std::cout << "mmmm" << std::endl;
 
     Mat transform = Mat::zeros(3, 3, CV_32FC1); //透视变换矩阵
-    transform = getPerspectiveTransform(srcTri, dstTri);  //获取透视变换矩阵       
+    transform = getPerspectiveTransform(srcTri, dstTri);  //获取透视变换矩阵
+
+    std::cout << "transform" << std::endl;
+    std::cout << transform << std::endl;
+    std::cout << "transform___end" << std::endl;
+
     mywarpPerspective(image, imageWarp, transform);  //透视变换
     //imshow("After WarpPerspecttive", imageWarp);
     imwrite("4.png", imageWarp);
